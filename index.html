@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulate Screen Off</title>
+    <meta name="description" content="在线模拟屏幕关闭，防止手机或电脑自动锁屏休眠。视频、音乐仍然可以在后台播放。">
+    <meta name="keywords" content="模拟息屏,屏幕常亮,防休眠,防止锁屏,Screen Off,Keep Screen On,No Sleep">
+    <title>Simulate Screen Off,模拟屏幕关闭</title>
     <script defer src="https://events.vercount.one/js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,7 +19,6 @@
         .visit-counter {
             display: none;
             color: #555;
-            
             font-size: 12px;
             margin-top: 30px;
             height: 18px;
@@ -48,7 +49,7 @@
     <div class="center-wrap">
         <div class="content-box">
             <img src="rest.svg" alt="coffee" width="80" height="80">
-            <div class="title" id="titleText">关闭屏幕</div>
+            <div class="title" id="titleText">Simulate screen off</div>
             <div class="action-hint">
                 <span class="link" id="closeBtn1"></span>
                 <span id="orText"></span>
@@ -88,15 +89,20 @@
         };
 
         // ========== 语言检测与初始化 ==========
-        function detectLangByBrowser() {
+        function detectLangByDomain() {
+            // 已移除：不再根据域名判断语言
+            // 现在只根据浏览器语言判断
             const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
             return browserLang.startsWith('zh') ? 'zh' : 'en';
         }
+
         function initLang() {
             const savedLang = localStorage.getItem('screenoff-lang');
-            const lang = savedLang || detectLangByBrowser();
+            // 逻辑：优先使用保存的语言，如果没有则使用浏览器检测的语言
+            const lang = savedLang || detectLangByDomain();
             applyLang(lang);
         }
+
         function applyLang(lang) {
             const t = i18n[lang];
             document.getElementById('titleText').textContent = t.title;
@@ -110,10 +116,13 @@
             document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
             localStorage.setItem('screenoff-lang', lang);
         }
+
         function getCurrentLang() {
             return localStorage.getItem('screenoff-lang') || 'zh';
         }
+
         initLang();
+
         document.getElementById('langBtn').addEventListener('click', (e) => {
             e.stopPropagation();
             const newLang = getCurrentLang() === 'zh' ? 'en' : 'zh';
@@ -155,6 +164,7 @@
                 console.warn('无法获取唤醒锁：', err.message);
             }
         }
+
         async function releaseWakeLock() {
             if (wakeLock !== null) {
                 try {
@@ -166,6 +176,7 @@
                 }
             }
         }
+
         document.addEventListener('visibilitychange', async () => {
             if (document.visibilityState === 'visible' && isFullscreen()) {
                 await requestWakeLock();
@@ -175,7 +186,9 @@
         // ========== 全屏相关函数 ==========
         function enterFullscreen() {
             cooldown = true;
-            setTimeout(() => { cooldown = false; }, 500);
+            setTimeout(() => {
+                cooldown = false;
+            }, 500);
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen({ navigationUI: 'hide' });
@@ -187,6 +200,7 @@
                 elem.msRequestFullscreen();
             }
         }
+
         function exitFullscreen() {
             hideHint();
             if (document.exitFullscreen) {
@@ -199,21 +213,29 @@
                 document.msExitFullscreen();
             }
         }
+
         function isFullscreen() {
             return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
         }
+
         function showHint() {
             hint.classList.add('show');
-            if (hintTimer) { clearTimeout(hintTimer); }
+            if (hintTimer) {
+                clearTimeout(hintTimer);
+            }
             hintTimer = setTimeout(() => {
                 hint.classList.remove('show');
                 hintTimer = null;
             }, 3000);
         }
+
         function hideHint() {
             hint.classList.add('no-transition');
             hint.classList.remove('show');
-            if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+            if (hintTimer) {
+                clearTimeout(hintTimer);
+                hintTimer = null;
+            }
             void hint.offsetHeight;
             requestAnimationFrame(() => {
                 hint.classList.remove('no-transition');
@@ -236,6 +258,7 @@
             e.stopPropagation();
             enterFullscreen();
         });
+
         document.addEventListener('keydown', (e) => {
             if (isFullscreen()) {
                 hideHint();
@@ -246,17 +269,20 @@
                 }
             }
         });
+
         document.addEventListener('click', (e) => {
             if (isFullscreen()) {
                 hideHint();
                 exitFullscreen();
             }
         });
+
         document.addEventListener('mousemove', () => {
             if (isFullscreen() && !cooldown) {
                 showHint();
             }
         });
+
         document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
         document.addEventListener('mozfullscreenchange', onFullscreenChange);
@@ -264,7 +290,7 @@
     </script>
     <script>
         var _hmt = _hmt || [];
-        (function() {
+        (function () {
             var hm = document.createElement("script");
             hm.src = "https://hm.baidu.com/hm.js?eb73e0fad01910accfcf940e78472cb7";
             var s = document.getElementsByTagName("script")[0];
