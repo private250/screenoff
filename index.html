@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>screenOff: 关闭屏幕</title>
+    <!-- Vercount 访问计数器 -->
+    <script defer src="https://events.vercount.one/js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+        }
+
+        .center-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content-box {
+            background-color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .title {
+            color: aliceblue;
+            font-size: 40px;
+        }
+
+        .action-hint {
+            color: aliceblue;
+            margin-top: 50px;
+            font-size: 16px;
+        }
+
+        .action-hint .link {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        /* 访问次数显示 - 始终占位，避免跳动 */
+        .visit-counter {
+            color: #555;
+            font-size: 12px;
+            margin-top: 30px;
+            height: 18px;
+            line-height: 18px;
+        }
+
+        .visit-counter .visit-value {
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        .visit-counter .visit-value.loaded {
+            opacity: 1;
+        }
+
+        /* 语言切换按钮 */
+        .lang-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            padding: 6px 14px;
+            font-size: 14px;
+            color: #aaa;
+            background: transparent;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10000;
+            transition: color 0.3s, border-color 0.3s;
+        }
+
+        .lang-btn:hover {
+            color: #fff;
+            border-color: #888;
+        }
+
+        /* 全屏提示文字样式 */
+        #hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #aaa;
+            font-size: 20px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 9999;
+        }
+
+        #hint.show {
+            opacity: 1;
+        }
+
+        #hint.no-transition {
+            transition: none !important;
+        }
+
+        /* 全屏状态下隐藏所有 UI 元素 */
+        :fullscreen .center-wrap,
+        :fullscreen .lang-btn { display: none; }
+        :fullscreen { cursor: none; background: #000; }
+
+        :-webkit-full-screen .center-wrap,
+        :-webkit-full-screen .lang-btn { display: none; }
+        :-webkit-full-screen { cursor: none; background: #000; width: 100%; height: 100%; }
+
+        :-moz-full-screen .center-wrap,
+        :-moz-full-screen .lang-btn { display: none; }
+        :-moz-full-screen { cursor: none; background: #000; }
+
+        :-ms-fullscreen .center-wrap,
+        :-ms-fullscreen .lang-btn { display: none; }
+        :-ms-fullscreen { cursor: none; background: #000; }
+    </style>
+</head>
+
+<body>
+
+    <button class="lang-btn" id="langBtn">EN</button>
+
+    <div class="center-wrap">
+        <div class="content-box">
+            <div class="title" id="titleText">关闭屏幕</div>
+            <div class="action-hint">
+                <span class="link" id="closeBtn1"></span>
+                <span id="orText"></span>
+            </div>
+            <!-- 访问次数显示区域：始终占位，数字用 opacity 过渡 -->
+            <div class="visit-counter">
+                <span id="visitLabel">总访问</span>
+                <span class="visit-value" id="vercount_value_site_pv">...</span>
+                <span id="visitUnit">次</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="hint"></div>
+
+    <script>
+        // ========== 国际化（i18n）配置 ==========
+        const i18n = {
+            zh: {
+                title: '关闭屏幕',
+                clickHere: '点击这里',
+                orPressEnter: '或按 Enter 键',
+                hint: '按任意键或点击鼠标退出全屏',
+                langSwitch: 'EN',
+                pageTitle: 'screenOff: 关闭屏幕',
+                visitLabel: '总访问',
+                visitUnit: '次'
+            },
+            en: {
+                title: 'Screen Off',
+                clickHere: 'Click here',
+                orPressEnter: 'or press Enter',
+                hint: 'Press any key or click to exit fullscreen',
+                langSwitch: '中文',
+                pageTitle: 'screenOff: Turn Off Display',
+                visitLabel: 'Total visits:',
+                visitUnit: ''
+            }
+        };
+
+        // ========== 语言检测与初始化 ==========
+
+        function detectLangByBrowser() {
+            const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+            return browserLang.startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function initLang() {
+            const savedLang = localStorage.getItem('screenoff-lang');
+            const lang = savedLang || detectLangByBrowser();
+            applyLang(lang);
+        }
+
+        function applyLang(lang) {
+            const t = i18n[lang];
+
+            document.getElementById('titleText').textContent = t.title;
+            document.getElementById('closeBtn1').textContent = t.clickHere;
+            document.getElementById('orText').textContent = ' ' + t.orPressEnter;
+            document.getElementById('hint').textContent = t.hint;
+            document.getElementById('langBtn').textContent = t.langSwitch;
+            document.title = t.pageTitle;
+
+            // 更新访问次数标签文字
+            document.getElementById('visitLabel').textContent = t.visitLabel;
+            document.getElementById('visitUnit').textContent = t.visitUnit;
+
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            localStorage.setItem('screenoff-lang', lang);
+        }
+
+        function getCurrentLang() {
+            return localStorage.getItem('screenoff-lang') || 'zh';
+        }
+
+        // 启动语言初始化
+        initLang();
+
+        // 语言切换按钮事件
+        document.getElementById('langBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newLang = getCurrentLang() === 'zh' ? 'en' : 'zh';
+            applyLang(newLang);
+        });
+
+        // ========== 访问次数平滑显示 ==========
+        // 用 MutationObserver 监听 Vercount 填入数字的瞬间，添加淡入动画
+        (function () {
+            const valueEl = document.getElementById('vercount_value_site_pv');
+            if (!valueEl) return;
+
+            const observer = new MutationObserver(() => {
+                // Vercount 将 "..." 替换为真实数字后，触发淡入
+                if (valueEl.textContent !== '...' && valueEl.textContent.trim() !== '') {
+                    requestAnimationFrame(() => {
+                        valueEl.classList.add('loaded');
+                    });
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(valueEl, { childList: true, characterData: true, subtree: true });
+        })();
+
+        // ========== Wake Lock 防休眠相关函数 ==========
+        const btn = document.getElementById('closeBtn1');
+        const hint = document.getElementById('hint');
+        let hintTimer = null;
+        let cooldown = false;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('唤醒锁已获取，系统将保持活跃');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('唤醒锁已释放');
+                    });
+                }
+            } catch (err) {
+                console.warn('无法获取唤醒锁：', err.message);
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLock !== null) {
+                try {
+                    await wakeLock.release();
+                    wakeLock = null;
+                    console.log('唤醒锁已手动释放');
+                } catch (err) {
+                    console.warn('释放唤醒锁失败：', err.message);
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && isFullscreen()) {
+                await requestWakeLock();
+            }
+        });
+
+        // ========== 全屏相关函数 ==========
+
+        function enterFullscreen() {
+            cooldown = true;
+            setTimeout(() => { cooldown = false; }, 500);
+
+            const elem = document.documentElement;
+
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen({ navigationUI: 'hide' });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            hideHint();
+
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        function isFullscreen() {
+            return !!(document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement);
+        }
+
+        function showHint() {
+            hint.classList.add('show');
+
+            if (hintTimer) {
+                clearTimeout(hintTimer);
+            }
+
+            hintTimer = setTimeout(() => {
+                hint.classList.remove('show');
+                hintTimer = null;
+            }, 3000);
+        }
+
+        function hideHint() {
+            hint.classList.add('no-transition');
+            hint.classList.remove('show');
+
+            if (hintTimer) {
+                clearTimeout(hintTimer);
+                hintTimer = null;
+            }
+
+            void hint.offsetHeight;
+
+            requestAnimationFrame(() => {
+                hint.classList.remove('no-transition');
+            });
+        }
+
+        // ========== 统一的全屏状态变化处理 ==========
+
+        function onFullscreenChange() {
+            if (isFullscreen()) {
+                requestWakeLock();
+            } else {
+                releaseWakeLock();
+                hideHint();
+                console.log('已退出全屏，按钮和鼠标指针已恢复');
+            }
+        }
+
+        // ========== 事件绑定 ==========
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            enterFullscreen();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (isFullscreen()) {
+                hideHint();
+                exitFullscreen();
+            } else {
+                if (e.key === 'Enter') {
+                    enterFullscreen();
+                }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (isFullscreen()) {
+                hideHint();
+                exitFullscreen();
+            }
+        });
+
+        document.addEventListener('mousemove', () => {
+            if (isFullscreen() && !cooldown) {
+                showHint();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+        document.addEventListener('mozfullscreenchange', onFullscreenChange);
+        document.addEventListener('MSFullscreenChange', onFullscreenChange);
+    </script>
+    <!-- 百度统计代码 -->
+    <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?eb73e0fad01910accfcf940e78472cb7";
+      var s = document.getElementsByTagName("script")[0]; 
+      s.parentNode.insertBefore(hm, s);
+    })();
+    </script>
+</body>
+
+</html>
