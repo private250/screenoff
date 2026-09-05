@@ -132,9 +132,19 @@
         // ========== 访问次数平滑显示 ==========
         (function () {
             const valueEl = document.getElementById('vercount_value_site_pv');
+            
+
             if (!valueEl) return;
             const observer = new MutationObserver(() => {
                 if (valueEl.textContent !== '...' && valueEl.textContent.trim() !== '') {
+
+
+                    const sitePv = document.getElementById('vercount_value_site_pv');
+
+                    //console.log("sitePv=>",sitePv)
+                    console.log("sitePvValue=>",sitePv ? sitePv.textContent.trim() : 'PV元素不存在')
+
+
                     requestAnimationFrame(() => {
                         valueEl.classList.add('loaded');
                     });
