@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视频教程</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(160deg, #1e2a3a 0%, #0f1622 100%);
+    color: #eaf0f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .wrap { width: 100%; max-width: 960px; }
+  .header { text-align: center; margin-bottom: 22px; }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+  .header p { margin-top: 8px; font-size: 14px; color: #8fa3b8; }
+  .player {
+    position: relative;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 18px 50px rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .player video {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .cover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.55));
+    cursor: pointer;
+    transition: opacity .3s ease;
+  }
+  .cover.hide { opacity: 0; pointer-events: none; }
+  .play-btn {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    background: rgba(46, 204, 113, .92);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 24px rgba(46,204,113,.5);
+    transition: transform .2s ease;
+  }
+  .cover:hover .play-btn { transform: scale(1.08); }
+  .play-btn::before {
+    content: "";
+    border-style: solid;
+    border-width: 15px 0 15px 24px;
+    border-color: transparent transparent transparent #fff;
+    margin-left: 6px;
+  }
+  .footer { text-align: center; margin-top: 18px; font-size: 13px; color: #6b7f95; }
+  @media (max-width: 600px) {
+    .header h1 { font-size: 21px; }
+    .play-btn { width: 64px; height: 64px; }
+    .play-btn::before { border-width: 12px 0 12px 19px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>视频教程</h1>
+      <p>点击下方播放按钮开始观看</p>
+    </div>
+
+    <div class="player">
+      <video id="video"
+             src="https://oss.screenoff.cc/how_to_jlsp.mp4"
+             preload="metadata"
+             playsinline
+             controls></video>
+      <div class="cover" id="cover">
+        <div class="play-btn"></div>
+      </div>
+    </div>
+
+    <div class="footer">XX视频教程 · 仅供学习使用</div>
+  </div>
+
+  <script>
+    var video = document.getElementById('video');
+    var cover = document.getElementById('cover');
+    cover.addEventListener('click', function () {
+      video.play();
+      cover.classList.add('hide');
+    });
+    video.addEventListener('play', function () {
+      cover.classList.add('hide');
+    });
+    video.addEventListener('pause', function () {
+      if (video.currentTime > 0) cover.classList.remove('hide');
+    });
+    video.addEventListener('ended', function () {
+      cover.classList.remove('hide');
+    });
+  </script>
+</body>
+</html>
